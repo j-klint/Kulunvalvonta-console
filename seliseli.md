@@ -148,7 +148,7 @@ Toinen on viive millisekunteina, kuinka kauan ohjelma odottelee inputtia, ennen
 kuin tyhjää ruudun ja tarkastaa kellonajan. (oletusarvo 15000)
 
 Jos haluaa käyttää muuta kuin oletusarvoja, niin esim. Task Schedulerissä on
-kohta, johon voi laittaa command line argumentteja. Toinen vaihto ehto olisi
+kohta, johon voi laittaa command line argumentteja. Toinen vaihtoehto olisi
 laittaa ne battiin, jolla käynnistää ohjelman.
 
 ### Toiminnasta
