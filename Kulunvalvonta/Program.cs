@@ -129,7 +129,7 @@ namespace Kulunvalvonta
                 catch (Exception e)
                 {
                     Print("\nSome dumb error occurred while trying to go full screen:\n\n", ConsoleColor.DarkRed);
-                    Print(e.ToString(), ConsoleColor.DarkRed);
+                    Print(e.ToString());
                     Console.WriteLine();
                 }
 
@@ -174,7 +174,8 @@ namespace Kulunvalvonta
                     }
                     catch (OperationCanceledException)
                     {
-                        Print("\nSeems that there was probably a problem with the RFID reader. Suppressing the error for now.\nMake sure the reader is plugged in.\n\n", ConsoleColor.DarkRed);
+                        Print("\nSeems that there was probably a problem with the RFID reader.\n" +
+                               "Suppressing the error for now.\nMake sure the reader is plugged in.\n\n", ConsoleColor.DarkRed);
                         Print("If that doesn't help, restart this device.\n\n", ConsoleColor.DarkRed);
                         Thread.Sleep(10000);
                     }
@@ -210,7 +211,10 @@ namespace Kulunvalvonta
                 Console.SetCursorPosition(0, 0);
                 Console.SetBufferSize(Console.WindowWidth, Console.WindowHeight);
             }
-            
+
+            //Print("Local date and time: ");
+            Print(DateTime.Now.ToString("f"), ConsoleColor.Cyan);
+            Console.WriteLine();
             Print(startMessage);
         }
 
@@ -293,7 +297,13 @@ namespace Kulunvalvonta
             }
         }
 
-        static int? GetUserID(SqlConnection conn, string tagId)
+        /// <summary>Get id of the tag's user</summary>
+        /// <returns>
+        /// -1 if the tag wasn't in the DB<br />
+        /// -2 if the tag is known but isn't assigned to anyone<br />
+        /// the id otherwise (a positive number)
+        /// </returns>
+        static int GetUserID(SqlConnection conn, string tagId)
         {
             string cmdStr = "SELECT user_id FROM Tags WHERE rfid_id = @tag;";
             SqlCommand cmd = new SqlCommand(cmdStr, conn);
@@ -301,10 +311,13 @@ namespace Kulunvalvonta
             cmd.Parameters["@tag"].Value = tagId;
             var y = cmd.ExecuteScalar();
 
-            if (y is null || y is DBNull)
-                return null;
-            else
-                return (int)y;
+            if (y is null)
+                return -1;
+
+            if (y is DBNull)
+                return -2;
+
+            return (int)y;
         }
 
         /// <summary>Gets user status from DB.</summary>
@@ -373,10 +386,26 @@ namespace Kulunvalvonta
                 conn.Open();
                 
                 // tsekataan onko lätkä kenenkään käytössä
-                int? userId = GetUserID(conn, tagId);
-                if (userId is null)
+                int userId = GetUserID(conn, tagId);
+                if (userId == -2)
                 {
                     Print("This tag isn't assigned to anyone.\n", ConsoleColor.DarkRed);
+                    return;
+                }
+
+                if (userId == -1)
+                {
+                    var name = DateTime.Now.ToString("O");
+                    string cmdStr = $"INSERT INTO Tags(rfid_id, serial) VALUES(@tag, '{name}');";
+                    var cmd = new SqlCommand(cmdStr, conn);
+                    cmd.Parameters.Add("@tag", System.Data.SqlDbType.Char);
+                    cmd.Parameters["@tag"].Value = tagId;
+                    if (cmd.ExecuteNonQuery() > 0)
+                    {
+                        Print("Previously unknown tag inserted into database.\nAssigned serial number: ");
+                        Print($"{name}\n", ConsoleColor.DarkYellow);
+                    }
+
                     return;
                 }
 
@@ -465,7 +494,7 @@ namespace Kulunvalvonta
 
                 Print("So far you've done ");
                 Print($"{24 * done.Days + done.Hours} h {done.Minutes} min", color);
-                Print(" out of ");
+                Print(" of ");
                 Print($"{24 * entireWeeksNorm.Days + entireWeeksNorm.Hours} h {entireWeeksNorm.Minutes} min", ConsoleColor.DarkYellow);
                 Print(" this week");
 
