@@ -480,11 +480,12 @@ namespace Kulunvalvonta
                     return; // can't check for holidays without country info
                 }
 
+                /*
                 // A message about how much time has been logged so far this week and how much is expected
                 DateOnly monday = GetMonday(time ?? DateTime.Now);
                 var entireWeeksNorm = CalculateNorm(conn, country, monday, monday.AddDays(4)); // Monday + 4 days is the same week's Friday.
                 var normUpToToday   = CalculateNorm(conn, country, monday, time ?? DateTime.Now);
-                var done = CalcTimeAccumulatedSince(conn, (int)userId, monday);
+                var done = CalcAccumulatedTime(conn, userId, monday, monday.AddDays(7));
                                 
                 ConsoleColor color = ConsoleColor.Yellow;
                 if (done >= normUpToToday)
@@ -502,12 +503,57 @@ namespace Kulunvalvonta
                     Print(". :D\n");
                 else
                     Print(".\n");
+                */
+
+                Print("Your week so far:\n\n");
+                WeeklyReport(conn, userId, country);
+                Print("\n");
 
                 if (notifyAboutAutoLogOut)
                 {
                     Print("Seems like you were automatically logged out last time.\n", ConsoleColor.DarkRed);
                 }
             }
+        }
+
+        static void WeeklyReport(SqlConnection conn, int userId, string country)
+        {
+            // TODO: Tehdä tämä kunnolla, eikä tehdä älytöntä määrää tietokantakyselyjä
+
+            DateOnly monday = GetMonday(DateTime.Now);
+            TimeSpan[] norms = new TimeSpan[6];
+            norms[5] = new(0, 0, 0);
+            TimeSpan[] done = new TimeSpan[6];
+            done[5] = new(0, 0, 0);
+
+            for (int i = 0; i < 5; ++i)
+            {
+                DateOnly day = monday.AddDays(i);
+                norms[i] = CalculateNorm(conn, country, day, day);
+                norms[5] += norms[i];
+                done[i] = CalcAccumulatedTime(conn, userId, day, day.AddDays(1));
+                done[5] += done[i];
+            }
+
+            Print("      |  Mon  |  Tue  |  Wed  |  Thu  |  Fri  | Total\n------+-------+-------+-------+-------+-------+-------\n Goal");
+            for (int i = 0; i < 6; ++i)
+            {
+                Print($" | {24 * norms[i].Days + norms[i].Hours:D2}:{norms[i].Minutes:D2}");
+            }
+            Print("\n Done");
+            for (int i = 0; i < 6; ++i)
+            {
+                ConsoleColor color = ConsoleColor.Yellow;
+                if (done[i] >= norms[i])
+                    color = ConsoleColor.Green;
+                else if (done[i] < norms[i] - TimeSpan.FromHours(2))
+                    color = ConsoleColor.DarkRed;
+
+                Print(" | ");
+                Print($"{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}", color);
+            }
+
+            Print("\n");
         }
 
         /// <summary>Custom function for printing colorful text</summary>
@@ -525,8 +571,7 @@ namespace Kulunvalvonta
         /// <summary>Computes the Monday of the week of the input date</summary>
         static DateOnly GetMonday(DateTime input)
         {
-            // no non-weird way of getting just the date from DateTime?
-            input.Deconstruct(out DateOnly date, out _);
+            var date = DateOnly.FromDateTime(input);
 
             // the DayOfWeek enum starts the week with Sunday! Back up 1 day to avoid going the wrong way.
             if (date.DayOfWeek == DayOfWeek.Sunday)
@@ -535,9 +580,9 @@ namespace Kulunvalvonta
             return date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
          }
 
-        static TimeSpan CalcTimeAccumulatedSince(SqlConnection conn, int userId, DateOnly startDate)
+        static TimeSpan CalcAccumulatedTime(SqlConnection conn, int userId, DateOnly startDate, DateOnly endingDate)
         {
-            string cmdStr = $"SELECT new_status, date FROM Loggings WHERE date >= '{startDate.ToString(DateTimeFormatInfo.InvariantInfo)}' and user_id = {userId} ORDER BY date;";
+            string cmdStr = $"SELECT new_status, date FROM Loggings WHERE date >= '{startDate.ToString(DateTimeFormatInfo.InvariantInfo)}' and date <= '{endingDate.ToString(DateTimeFormatInfo.InvariantInfo)}' and user_id = {userId} ORDER BY date;";
             SqlCommand cmd = new SqlCommand(cmdStr, conn);
             TimeSpan time = new TimeSpan(0);
 
@@ -572,8 +617,7 @@ namespace Kulunvalvonta
 
         static TimeSpan CalculateNorm(SqlConnection conn, string country, DateOnly first, DateTime last)
         {
-            last.Deconstruct(out DateOnly date, out _);
-            return CalculateNorm(conn, country, first, date);
+            return CalculateNorm(conn, country, first, DateOnly.FromDateTime(last));
         }
 
         static TimeSpan CalculateNorm(SqlConnection conn, string country, DateOnly first, DateOnly last)
