@@ -505,14 +505,14 @@ namespace Kulunvalvonta
                     Print(".\n");
                 */
 
-                Print("Your week so far:\n\n");
-                WeeklyReport(conn, userId, country);
-                Print("\n");
-
                 if (notifyAboutAutoLogOut)
                 {
                     Print("Seems like you were automatically logged out last time.\n", ConsoleColor.DarkRed);
                 }
+
+                Print("Your week so far:\n\n");
+                WeeklyReport(conn, userId, country);
+                Print("\n");
             }
         }
 
@@ -522,17 +522,28 @@ namespace Kulunvalvonta
 
             DateOnly monday = GetMonday(DateTime.Now);
             TimeSpan[] norms = new TimeSpan[6];
-            norms[5] = new(0, 0, 0);
             TimeSpan[] done = new TimeSpan[6];
+            bool[] autoLogOuts = new bool[6];
+            norms[5] = new(0, 0, 0);
             done[5] = new(0, 0, 0);
+            autoLogOuts[5] = false;
+            int daysSoFar = DateTime.Now.DayOfYear - monday.DayOfYear;
+            TimeSpan normSoFar = TimeSpan.Zero;
+            TimeSpan doneSoFar = TimeSpan.Zero;
 
             for (int i = 0; i < 5; ++i)
             {
                 DateOnly day = monday.AddDays(i);
                 norms[i] = CalculateNorm(conn, country, day, day);
                 norms[5] += norms[i];
-                done[i] = CalcAccumulatedTime(conn, userId, day, day.AddDays(1));
+                (done[i], autoLogOuts[i]) = CalcAccumulatedTime(conn, userId, day, day.AddDays(1));
                 done[5] += done[i];
+                autoLogOuts[5] |= autoLogOuts[i];
+                if (i <= daysSoFar)
+                {
+                    normSoFar += norms[i];
+                    doneSoFar += done[i];
+                }
             }
 
             Print("      |  Mon  |  Tue  |  Wed  |  Thu  |  Fri  | Total\n------+-------+-------+-------+-------+-------+-------\n Goal");
@@ -540,20 +551,34 @@ namespace Kulunvalvonta
             {
                 Print($" | {24 * norms[i].Days + norms[i].Hours:D2}:{norms[i].Minutes:D2}");
             }
-            Print("\n Done");
+            Print("\n Done ");
             for (int i = 0; i < 6; ++i)
             {
-                ConsoleColor color = ConsoleColor.Yellow;
-                if (done[i] >= norms[i])
-                    color = ConsoleColor.Green;
-                else if (done[i] < norms[i] - TimeSpan.FromHours(2))
-                    color = ConsoleColor.DarkRed;
+                ConsoleColor color;
+                if (i > daysSoFar && i != 5)
+                    color = ConsoleColor.Gray;
+                else if (i == 5)
+                    color = GetColorCode(doneSoFar, normSoFar);
+                else
+                    color = GetColorCode(done[i], norms[i]);
 
-                Print(" | ");
-                Print($"{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}", color);
+                Print("|");
+                char space = autoLogOuts[i] ? '"' : ' ';
+                Print($"{space}{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}{space}", color);
             }
 
             Print("\n");
+        }
+
+        static ConsoleColor GetColorCode(TimeSpan done, TimeSpan norm)
+        {
+            ConsoleColor color = ConsoleColor.Yellow;
+            if (done >= norm)
+                color = ConsoleColor.Green;
+            else if (done < norm - TimeSpan.FromHours(2))
+                color = ConsoleColor.DarkRed;
+
+            return color;
         }
 
         /// <summary>Custom function for printing colorful text</summary>
@@ -580,11 +605,12 @@ namespace Kulunvalvonta
             return date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
          }
 
-        static TimeSpan CalcAccumulatedTime(SqlConnection conn, int userId, DateOnly startDate, DateOnly endingDate)
+        static (TimeSpan, bool) CalcAccumulatedTime(SqlConnection conn, int userId, DateOnly startDate, DateOnly endingDate)
         {
             string cmdStr = $"SELECT new_status, date FROM Loggings WHERE date >= '{startDate.ToString(DateTimeFormatInfo.InvariantInfo)}' and date <= '{endingDate.ToString(DateTimeFormatInfo.InvariantInfo)}' and user_id = {userId} ORDER BY date;";
             SqlCommand cmd = new SqlCommand(cmdStr, conn);
             TimeSpan time = new TimeSpan(0);
+            bool kicked = false, wasNaughty = false;
 
             using (SqlDataReader reader = cmd.ExecuteReader())
             {
@@ -608,11 +634,14 @@ namespace Kulunvalvonta
                     {
                         time += date - start;
                         loggedIn = false;
+                        kicked |= !wasNaughty && (status & Status.AutoLogOut) != 0;
                     }
+
+                    wasNaughty = (status & Status.AutoLogOut) != 0;
                 }
             }
 
-            return time;
+            return (time, kicked);
         }
 
         static TimeSpan CalculateNorm(SqlConnection conn, string country, DateOnly first, DateTime last)
