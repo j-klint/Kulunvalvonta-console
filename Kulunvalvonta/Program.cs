@@ -26,6 +26,7 @@ namespace Kulunvalvonta
         static string connectionString = string.Empty;
         static readonly string startMessage     = "Waiting for input from the RFID reader.\n";
         static readonly string goodNightMessage = "Closed for the night. Sleep tight. Zzz...\n";
+        const ConsoleColor defaultColor = ConsoleColor.Gray;
 
         static readonly int openingHour = 6;
         static readonly int closingHour = 21;
@@ -93,7 +94,7 @@ namespace Kulunvalvonta
             }
             else
             {
-                clrScrDelay = 15000; // in milliseconds
+                clrScrDelay = 20000; // in milliseconds
             }
 
             // use first argument, if existant, for COM port number
@@ -175,7 +176,7 @@ namespace Kulunvalvonta
                     catch (OperationCanceledException)
                     {
                         Print("\nSeems that there was probably a problem with the RFID reader.\n" +
-                               "Suppressing the error for now.\nMake sure the reader is plugged in.\n\n", ConsoleColor.DarkRed);
+                               "Suppressing the error for now. Make sure the reader is plugged in.\n\n", ConsoleColor.DarkRed);
                         Print("If that doesn't help, restart this device.\n\n", ConsoleColor.DarkRed);
                         Thread.Sleep(10000);
                     }
@@ -212,7 +213,6 @@ namespace Kulunvalvonta
                 Console.SetBufferSize(Console.WindowWidth, Console.WindowHeight);
             }
 
-            //Print("Local date and time: ");
             Print(DateTime.Now.ToString("f"), ConsoleColor.Cyan);
             Console.WriteLine();
             Print(startMessage);
@@ -463,7 +463,7 @@ namespace Kulunvalvonta
                 {
                     Print(userName, ConsoleColor.DarkYellow);
                     Print($" logged {inOrOut} on ");
-                    Print($"{time}.", ConsoleColor.Cyan);
+                    Print($"{time:T}.", ConsoleColor.Cyan);
                     Print(greeting);
                 }
                 else
@@ -480,31 +480,6 @@ namespace Kulunvalvonta
                     return; // can't check for holidays without country info
                 }
 
-                /*
-                // A message about how much time has been logged so far this week and how much is expected
-                DateOnly monday = GetMonday(time ?? DateTime.Now);
-                var entireWeeksNorm = CalculateNorm(conn, country, monday, monday.AddDays(4)); // Monday + 4 days is the same week's Friday.
-                var normUpToToday   = CalculateNorm(conn, country, monday, time ?? DateTime.Now);
-                var done = CalcAccumulatedTime(conn, userId, monday, monday.AddDays(7));
-                                
-                ConsoleColor color = ConsoleColor.Yellow;
-                if (done >= normUpToToday)
-                    color = ConsoleColor.Green;
-                else if ( done < normUpToToday - TimeSpan.FromHours(2) )
-                    color = ConsoleColor.DarkRed;
-
-                Print("So far you've done ");
-                Print($"{24 * done.Days + done.Hours} h {done.Minutes} min", color);
-                Print(" of ");
-                Print($"{24 * entireWeeksNorm.Days + entireWeeksNorm.Hours} h {entireWeeksNorm.Minutes} min", ConsoleColor.DarkYellow);
-                Print(" this week");
-
-                if (done >= normUpToToday + TimeSpan.FromHours(2))
-                    Print(". :D\n");
-                else
-                    Print(".\n");
-                */
-
                 if (notifyAboutAutoLogOut)
                 {
                     Print("Seems like you were automatically logged out last time.\n", ConsoleColor.DarkRed);
@@ -512,7 +487,7 @@ namespace Kulunvalvonta
 
                 Print("Your week so far:\n\n");
                 WeeklyReport(conn, userId, country);
-                Print("\n");
+                Console.WriteLine();
             }
         }
 
@@ -546,31 +521,34 @@ namespace Kulunvalvonta
                 }
             }
 
-            Print("      |  Mon  |  Tue  |  Wed  |  Thu  |  Fri  | Total\n------+-------+-------+-------+-------+-------+-------\n Goal");
+            //Print("      |  Mon  |  Tue  |  Wed  |  Thu  |  Fri  | Total\n------+-------+-------+-------+-------+-------+-------\n Goal");
+            Print("      |   Mon   |   Tue   |   Wed   |   Thu   |   Fri   | Total\n------+---------+---------+---------+---------+---------+---------\n Goal");
             for (int i = 0; i < 6; ++i)
             {
-                Print($" | {24 * norms[i].Days + norms[i].Hours:D2}:{norms[i].Minutes:D2}");
+                //Print($" | {24 * norms[i].Days + norms[i].Hours:D2}:{norms[i].Minutes:D2}");
+                Print($" | {24 * norms[i].Days + norms[i].Hours:D2}h {norms[i].Minutes:D2}m");
             }
             Print("\n Done ");
             for (int i = 0; i < 6; ++i)
             {
                 ConsoleColor color;
-                if (i > daysSoFar && i != 5)
-                    color = ConsoleColor.Gray;
-                else if (i == 5)
-                    color = GetColorCode(doneSoFar, normSoFar);
+                if (i == 5)
+                    color = ColorCodeTime(doneSoFar, normSoFar);
+                else if (i > daysSoFar)
+                    color = defaultColor;
                 else
-                    color = GetColorCode(done[i], norms[i]);
+                    color = ColorCodeTime(done[i], norms[i]);
 
                 Print("|");
                 char space = autoLogOuts[i] ? '"' : ' ';
-                Print($"{space}{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}{space}", color);
+                //Print($"{space}{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}{space}", color);
+                Print($"{space}{24 * done[i].Days + done[i].Hours:D2}h {done[i].Minutes:D2}m{space}", color);
             }
 
             Print("\n");
         }
 
-        static ConsoleColor GetColorCode(TimeSpan done, TimeSpan norm)
+        static ConsoleColor ColorCodeTime(TimeSpan done, TimeSpan norm)
         {
             ConsoleColor color = ConsoleColor.Yellow;
             if (done >= norm)
@@ -582,14 +560,14 @@ namespace Kulunvalvonta
         }
 
         /// <summary>Custom function for printing colorful text</summary>
-        /// <remarks>Resets text color back to gray afterwards.</remarks>
-        static void Print(string? str, ConsoleColor C = ConsoleColor.Gray)
+        /// <remarks>Resets text color to <i>defaulColor</i> afterwards.</remarks>
+        static void Print(string? str, ConsoleColor C = defaultColor)
         {
             if (str is not null)
             {
                 Console.ForegroundColor = C;
                 Console.Write(str);
-                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.ForegroundColor = defaultColor;
             }
         }
 

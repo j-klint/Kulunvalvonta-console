@@ -2,6 +2,8 @@ CREATE DATABASE Kulunvalv;
 GO
 USE Kulunvalv;
 GO
+ALTER DATABASE Kulunvalv SET AUTO_CLOSE OFF;
+GO
 
 --DROP TABLE Holidays;
 --DROP TABLE Loggings;
