@@ -403,9 +403,10 @@ namespace Kulunvalvonta
                     if (cmd.ExecuteNonQuery() > 0)
                     {
                         Print("Previously unknown tag inserted into database.\nAssigned serial number: ");
-                        Print($"{name}\n", ConsoleColor.DarkYellow);
+                        Print($"{name}\n\n", ConsoleColor.DarkYellow);
                     }
 
+                    Print("This tag isn't assigned to anyone!\n", ConsoleColor.DarkRed);
                     return;
                 }
 
@@ -565,7 +566,11 @@ namespace Kulunvalvonta
         {
             if (str is not null)
             {
-                Console.ForegroundColor = C;
+                if (C == ConsoleColor.Yellow)
+                    Console.Write("\x1b[38;5;226m");
+                else
+                    Console.ForegroundColor = C;
+
                 Console.Write(str);
                 Console.ForegroundColor = defaultColor;
             }
