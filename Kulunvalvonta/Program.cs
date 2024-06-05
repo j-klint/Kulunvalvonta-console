@@ -202,7 +202,7 @@ namespace Kulunvalvonta
             {
                 // Win11-kummallisuus.
                 // TODO: Pitää vielä testata win kympissä.
-                Console.WriteLine("\x1b[3J");
+                Console.Write("\x1b[3J");
 
                 // Set console buffer to equal the window in size,
                 // to get rid on unaesthetic scroll bar.
@@ -496,14 +496,13 @@ namespace Kulunvalvonta
         {
             // TODO: Tehdä tämä kunnolla, eikä tehdä älytöntä määrää tietokantakyselyjä
 
-            DateOnly monday = GetMonday(DateTime.Now);
+            var (monday, daysSoFar) = GetMonday(DateTime.Now);
             TimeSpan[] norms = new TimeSpan[6];
             TimeSpan[] done = new TimeSpan[6];
             bool[] autoLogOuts = new bool[6];
             norms[5] = new(0, 0, 0);
             done[5] = new(0, 0, 0);
             autoLogOuts[5] = false;
-            int daysSoFar = DateTime.Now.DayOfYear - monday.DayOfYear;
             TimeSpan normSoFar = TimeSpan.Zero;
             TimeSpan doneSoFar = TimeSpan.Zero;
 
@@ -522,11 +521,9 @@ namespace Kulunvalvonta
                 }
             }
 
-            //Print("      |  Mon  |  Tue  |  Wed  |  Thu  |  Fri  | Total\n------+-------+-------+-------+-------+-------+-------\n Goal");
             Print("      |   Mon   |   Tue   |   Wed   |   Thu   |   Fri   | Total\n------+---------+---------+---------+---------+---------+---------\n Goal");
             for (int i = 0; i < 6; ++i)
             {
-                //Print($" | {24 * norms[i].Days + norms[i].Hours:D2}:{norms[i].Minutes:D2}");
                 Print($" | {24 * norms[i].Days + norms[i].Hours:D2}h {norms[i].Minutes:D2}m");
             }
             Print("\n Done ");
@@ -542,7 +539,6 @@ namespace Kulunvalvonta
 
                 Print("|");
                 char space = autoLogOuts[i] ? '"' : ' ';
-                //Print($"{space}{24 * done[i].Days + done[i].Hours:D2}:{done[i].Minutes:D2}{space}", color);
                 Print($"{space}{24 * done[i].Days + done[i].Hours:D2}h {done[i].Minutes:D2}m{space}", color);
             }
 
@@ -576,16 +572,20 @@ namespace Kulunvalvonta
             }
         }
 
-        /// <summary>Computes the Monday of the week of the input date</summary>
-        static DateOnly GetMonday(DateTime input)
+        /// <summary>Computes the Monday of the week of the input date
+        /// and how many days difference between Monday and input</summary>
+        static (DateOnly, int) GetMonday(DateTime input)
         {
             var date = DateOnly.FromDateTime(input);
+            int daysFromMonday = 0;
 
-            // the DayOfWeek enum starts the week with Sunday! Back up 1 day to avoid going the wrong way.
-            if (date.DayOfWeek == DayOfWeek.Sunday)
+            while (date.DayOfWeek != DayOfWeek.Monday)
+            {
                 date = date.AddDays(-1);
+                ++daysFromMonday;
+            }
 
-            return date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
+            return (date, daysFromMonday);
          }
 
         static (TimeSpan, bool) CalcAccumulatedTime(SqlConnection conn, int userId, DateOnly startDate, DateOnly endingDate)
