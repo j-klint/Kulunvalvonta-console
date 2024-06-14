@@ -1,8 +1,22 @@
+-- Ennen kuin luodaan tietokantoja:
+--     sudo /opt/mssql/bin/mssql-conf set-collation
+-- jolle sanotaan:
+--     Finnish_Swedish_100_CI_AS_SC_UTF8
+-- Tarkoittaa "Case Insensitive, Accent Sensitive, Supplementary Characters, UTF-8" tjsp.
+
+--CREATE DATABASE Kulunvalv COLLATE Finnish_Swedish_100_CI_AS_SC_UTF8;
+-- Vaan tuo collate mahtaa tulla defaulttina serverin asetuksesta
+USE master;
+GO
+DROP DATABASE Kulunvalv;
+GO
 CREATE DATABASE Kulunvalv;
 GO
-USE Kulunvalv;
+ALTER DATABASE Kulunvalv SET RECOVERY SIMPLE;
 GO
 ALTER DATABASE Kulunvalv SET AUTO_CLOSE OFF;
+GO
+USE Kulunvalv;
 GO
 
 --DROP TABLE Holidays;
@@ -59,7 +73,6 @@ CREATE TABLE Holidays
 	se   int   NOT NULL,
 	no   int   NOT NULL
 );
-
 
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-01-02',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-01-03',  -1,  -1,  -1);
