@@ -1,6 +1,6 @@
 # Ovikoodinlukijan dokumentaatiota
 
-2024-05-06
+2024-06-17
 
 
 ## TWN3 Multi125 -RFID-lukijan asetukset
@@ -23,7 +23,14 @@ vaihdetaan *Mode*-kohdasta tilaksi "*Intelligent Virtual COM Port*" ja
 *Scripting*-kohdasta valitaan ohjelma, joka laitteelle annetaan
 suoritettavaksi. Tässä pitäisi olla liitteenä `kustom.twn.c`, joka on muutoin
 ihan sama kuin devpackin `standard.v3.twn.c`, paitsi että olen muuttanut yhden
-komennon riviltä 155. Skripti kai pitää kääntää, ja sen jälkeen *Write Config*
+komennon riviltä 155:
+
+```c
+//HostSendHex(ID,IDBitCnt,(IDBitCnt+7)/8*2); // Away with this
+HostSendDec(ID,IDBitCnt,0);                  // In with this
+```
+
+Skripti kai pitää kääntää, ja sen jälkeen *Write Config*
 -napista lähettää uudet asetukset laitteelle.
 
 *Restart*-napilla poistutaan konfiguraatio-tilasta, ja laitteen pitäisi nyt
@@ -86,11 +93,18 @@ ja käyttelemään niitä komentorivillä. Mielenkiintoista. Tuo `NewLine` pitä
 koska defaulttina TWN3 käyttää jostain syystä *carriage returniä*, enkä
 halunnut mennä sitä muuttelemaan.
 
-### Vasitulla apuohjelmalla
+### ~~Vasitulla apuohjelmalla~~
 
-Koska PowerShell-komentojen toistelu on vaivalloista, kirjoittelin
+~~Koska PowerShell-komentojen toistelu on vaivalloista, kirjoittelin
 Windows-puolen helpottamiseksi pienen konsoliohjelman, joka tekee suunnilleen
-saman kun tuo Linux-komento.
+saman kun tuo Linux-komento.~~
+
+### Tällä ohjelmalla
+
+Lisäsin semmoisen ominaisuuden että aina, kun tämä lukee RFID-koodin, jota ei
+jo ole tietokannassa, niin tämä sen sinne lisää ja laittaa nimeksi sen hetken
+"timestampin". Sitten se pitää vielä jollain hallintaohjelmalla käydä liittämässä
+johonkuhun käyttäjään.
 
 
 ## Tietokanta
@@ -123,7 +137,7 @@ paremmin suoraan scriptistä lukemalla.
         - The third least significant bit indicates whether the user was
           logged using the web app.
         - I thought I was being clever by "caching" data, but
-          [allegedly](https://www.databasedesign-resource.com/denormalization.html)
+          [apparently](https://www.databasedesign-resource.com/denormalization.html)
           keeping redundant data like this is unwise.
 - `Tags`
     - RFID tags in use and whom they are currently assigned to
@@ -145,7 +159,7 @@ Ensimmäinen parametri on COM-portin numero. Tähän pitää laittaa se luku, jo
 tuolla aiemmin saatiin selville. (oletusarvo 3)
 
 Toinen on viive millisekunteina, kuinka kauan ohjelma odottelee inputtia, ennen
-kuin tyhjää ruudun ja tarkastaa kellonajan. (oletusarvo 15000)
+kuin tyhjää ruudun ja tarkastaa kellonajan. (oletusarvo 20000)
 
 Jos haluaa käyttää muuta kuin oletusarvoja, niin esim. Task Schedulerissä on
 kohta, johon voi laittaa command line argumentteja. Toinen vaihtoehto olisi
@@ -194,27 +208,20 @@ Lukemisfunktio hoitaa sarjaportista lukemisen lisäksi myös seuraavat tehtävä
   pvm ja kellonaika.
 - Näyttää edellisen kohdan tiedot ruudulla sekä käyttäjän maan mukaisen
   tervehdyksen. **Joku kielitaitoinen tarkastakoon nämäkin.**
-- Laskee paljonko pitäisi tehdä hommia tällä viikolla ja paljonko on
-  toistaiseksi tehty ja paljonko pitäisi tämän päivän loppuun mennessä olla
-  tehtynä.
+- Laskee, paljonko pitäisi tehdä hommia tällä viikolla ja paljonko on
+  toistaiseksi tehty, ja esittää päiväkohtaiset tiedot ascii-grafiikkataulukkona.
 - Näyttää em. tuloksia mukamas oikein värikoodattuina.
     - punainen, jos on päivä yli kahta tuntia vaille valmis
     - vihreä, jos on jo tehty tarpeeksi tälle päivälle
     - keltainen, jos on siltä väliltä
 
-Lähdekoodissa on sen verran kommentteja, ettei varmaan ole tarvetta tässä sen
-tarkemmin selitellä yksityiskohtia.
-
-Huomauttamisen arvoinen asia ehkä on, että noissa tietokantahommissa ei saa
-olla kuin yksi `SqlDataReader` tms. auki kerrallaan. Pari kertaa heitti herjaa,
-kun silmukassa luin tietokannasta tietoja ja niitten tietojen perusteella
-yritin tehdä myös jotain muuta tietokannalle. Piti järjestellä silmukat uusiksi
-taikka käyttää `SqlDataAdapter`:ia, joka lukee kaikki tiedot yhdellä
-rykäisyllä.
+Lähdekoodissa on sen verran kommentteja, ettei toivottavasti ole tarvetta tässä
+sen tarkemmin selitellä yksityiskohtia.
 
 
-## Web äpistä / admin-portaalista
+## Web äpp / admin-portaali
 
-ASP.NET Core MVC:llä tehty. Laiskaan tyyliin enimmäkseen Visuan studion
-scaffoldeilla se on suurimmalta osin luotu. Pyrin lisäilemään kommentteja
-niihin paikkoihin, joissa on joitain omia keksintöjä.
+Tälle on kaveriohjelma, jolla pääsee nettisivukäyttöliittymän kautta tonkimaan
+tietoja:
+<br>
+<https://github.com/j-klint/Kulunvalvomo-mvc>
