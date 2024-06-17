@@ -483,7 +483,7 @@ namespace Kulunvalvonta
 
                 if (notifyAboutAutoLogOut)
                 {
-                    Print("Seems like you were automatically logged out last time.\n", ConsoleColor.DarkRed);
+                    Print("Seems like you forgot to log out last time.\n", ConsoleColor.DarkRed);
                 }
 
                 Print("Your week so far:\n\n");
@@ -529,11 +529,11 @@ namespace Kulunvalvonta
             Print("\n Done ");
             for (int i = 0; i < 6; ++i)
             {
-                ConsoleColor color;
+                byte color;
                 if (i == 5)
                     color = ColorCodeTime(doneSoFar, normSoFar);
                 else if (i > daysSoFar)
-                    color = defaultColor;
+                    color = (byte)defaultColor;
                 else
                     color = ColorCodeTime(done[i], norms[i]);
 
@@ -545,31 +545,71 @@ namespace Kulunvalvonta
             Print("\n");
         }
 
-        static ConsoleColor ColorCodeTime(TimeSpan done, TimeSpan norm)
+        static byte ColorCodeTime(TimeSpan done, TimeSpan norm)
         {
-            ConsoleColor color = ConsoleColor.Yellow;
-            if (done >= norm)
-                color = ConsoleColor.Green;
-            else if (done < norm - TimeSpan.FromHours(2))
-                color = ConsoleColor.DarkRed;
+            if (done < norm - TimeSpan.FromHours(2))
+                return (byte)ConsoleColor.DarkRed;
 
-            return color;
+            if (done < norm - TimeSpan.FromMinutes(45))
+                return 202; // orange
+
+            if (done < norm)
+                return 226; // very yellow #ffff00
+
+            return (byte)ConsoleColor.Green;
         }
 
-        /// <summary>Custom function for printing colorful text</summary>
-        /// <remarks>Resets text color to <i>defaulColor</i> afterwards.</remarks>
+        /// <summary>A function for printing colorful text</summary>
+        /// <remarks>Resets text color to <i>defaultColor</i> afterwards.</remarks>
         static void Print(string? str, ConsoleColor C = defaultColor)
         {
-            if (str is not null)
-            {
-                if (C == ConsoleColor.Yellow)
-                    Console.Write("\x1b[38;5;226m");
-                else
-                    Console.ForegroundColor = C;
+            if (string.IsNullOrEmpty(str))
+                return;
 
-                Console.Write(str);
-                Console.ForegroundColor = defaultColor;
-            }
+            Console.ForegroundColor = C;
+            Console.Write(str);
+            Console.ForegroundColor = defaultColor;
+        }
+
+        /// <summary>
+        /// A function for printing colorful text using "ANSI escape codes".
+        /// Resets text color to <i>defaultColor</i> afterwards.<br />
+        /// Hopefully will print the same as the other overload if <i>color</i>
+        /// is a ConsoleColor cast into byte.
+        /// </summary>
+        /// <remarks>
+        /// Cf. https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
+        /// </remarks>
+        static void Print(string? str, byte color)
+        {
+            if (string.IsNullOrEmpty(str))
+                return;
+
+            // Permute the enum back to "standard" color codes
+            byte C = color switch
+            {
+                (byte)ConsoleColor.Black       =>  0,
+                (byte)ConsoleColor.DarkBlue    =>  4,
+                (byte)ConsoleColor.DarkGreen   =>  2,
+                (byte)ConsoleColor.DarkCyan    =>  6,
+                (byte)ConsoleColor.DarkRed     =>  1,
+                (byte)ConsoleColor.DarkMagenta =>  5,
+                (byte)ConsoleColor.DarkYellow  =>  3,
+                (byte)ConsoleColor.Gray        =>  7,
+                (byte)ConsoleColor.DarkGray    =>  8,
+                (byte)ConsoleColor.Blue        => 12,
+                (byte)ConsoleColor.Green       => 10,
+                (byte)ConsoleColor.Cyan        => 14,
+                (byte)ConsoleColor.Red         =>  9,
+                (byte)ConsoleColor.Magenta     => 13,
+                (byte)ConsoleColor.Yellow      => 11,
+                (byte)ConsoleColor.White       => 15,
+                _ => color
+            };
+
+            Console.Write($"\x1b[38;5;{C}m");
+            Console.Write(str);
+            Console.ForegroundColor = defaultColor;
         }
 
         /// <summary>Computes the Monday of the week of the input date

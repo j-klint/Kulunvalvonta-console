@@ -27,7 +27,7 @@ GO
 CREATE TABLE Users
 (
 	id       INT           NOT NULL PRIMARY KEY IDENTITY(1,1),
-	name     VARCHAR(800)  NOT NULL,
+	name     VARCHAR(100)  NOT NULL,
 	country  CHAR(2)       NOT NULL CHECK (country IN ('fi', 'no', 'se')),
 	-- country needed to determine which day are holidays etc.
 	status   TINYINT       NOT NULL DEFAULT 0
@@ -93,7 +93,7 @@ INSERT INTO Holidays(day, fi, se, no) VALUES('2024-05-17',   0,   0,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-05-20',   0,   0,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-06-06',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-06-07',  -1,  -1,  -1);
-INSERT INTO Holidays(day, fi, se, no) VALUES('2024-06-20', 240, 240, 240);
+INSERT INTO Holidays(day, fi, se, no) VALUES('2024-06-20', 230, 230, 230);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-06-21',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-08',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-09',  -1,  -1,  -1);
@@ -108,7 +108,7 @@ INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-19',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-21',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-22',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-23',  -1,  -1,  -1);
-INSERT INTO Holidays(day, fi, se, no) VALUES('2024-11-01', 180, 180, 180);
+INSERT INTO Holidays(day, fi, se, no) VALUES('2024-11-01', 190, 190, 190);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-12-06',  -1,   0,   0);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-12-23',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-12-24',  -1,  -1,  -1);
