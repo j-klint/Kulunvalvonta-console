@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
 using System.IO.Ports;
+using System.Text;
 //using System.Windows.Forms; // for class SendKeys. Apparently not needed?
 
 namespace Kulunvalvonta
@@ -81,7 +82,8 @@ namespace Kulunvalvonta
                 Print("Failed to open file \"connectionString.txt\".\n", ConsoleColor.DarkRed);
                 return;
             }
-            
+
+            Console.OutputEncoding = Encoding.Unicode;
             Console.Clear();
             
             int clrScrDelay;
@@ -463,7 +465,7 @@ namespace Kulunvalvonta
                 if ( time is not null )
                 {
                     Print(userName, ConsoleColor.DarkYellow);
-                    Print($" logged {inOrOut} on ");
+                    Print($" logged {inOrOut} at ");
                     Print($"{time:T}.", ConsoleColor.Cyan);
                     Print(greeting);
                 }
@@ -521,11 +523,27 @@ namespace Kulunvalvonta
                 }
             }
 
-            Print("      |   Mon   |   Tue   |   Wed   |   Thu   |   Fri   | Total\n------+---------+---------+---------+---------+---------+---------\n Goal");
+            Print("      │   Mon   │   Tue   │   Wed   │   Thu   │   Fri   │ Total\n──────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────");
+
+            Print("\n Goal");
             for (int i = 0; i < 6; ++i)
             {
-                Print($" | {24 * norms[i].Days + norms[i].Hours:D2}h {norms[i].Minutes:D2}m");
+                Print($" │ {24 * norms[i].Days + norms[i].Hours:D2}h {norms[i].Minutes:D2}m");
             }
+
+            Print("\n      ");
+            for (int i = 0; i < 6; ++i)
+            {
+                Print("│");
+
+                if (norms[i] == TimeSpan.Zero)
+                    Print("▒▒▒▒▒▒▒▒▒");
+                else if (i == 5)
+                    DrawProgressBar(doneSoFar / norms[5], 9);
+                else
+                    DrawProgressBar(done[i] / norms[i], 9);
+            }
+
             Print("\n Done ");
             for (int i = 0; i < 6; ++i)
             {
@@ -537,12 +555,12 @@ namespace Kulunvalvonta
                 else
                     color = ColorCodeTime(done[i], norms[i]);
 
-                Print("|");
+                Print("│");
                 char space = autoLogOuts[i] ? '"' : ' ';
                 Print($"{space}{24 * done[i].Days + done[i].Hours:D2}h {done[i].Minutes:D2}m{space}", color);
             }
 
-            Print("\n");
+            Console.WriteLine();
         }
 
         static byte ColorCodeTime(TimeSpan done, TimeSpan norm)
@@ -557,6 +575,33 @@ namespace Kulunvalvonta
                 return 226; // very yellow #ffff00
 
             return (byte)ConsoleColor.Green;
+        }
+
+        static void DrawProgressBar(double ratio, int barLength)
+        {
+            const string blocks = " \u258F\u258e\u258d\u258c\u258b\u258a\u2589\u2588";
+            Console.Write("\x1b[48;5;124m"); // backround color a shade of red
+            Console.Write("\x1b[38;5;76m");  // text color a shade of green
+
+            ratio = Math.Max(Math.Min(ratio, 1.0), 0.0);
+            int whole = (int)(ratio * barLength);
+            int fraction = (int)((ratio * barLength - whole) * 8.0);
+            int empty = barLength - whole;
+
+            for (int i = 0; i < whole; i++)
+                Console.Write(blocks[8]);
+
+            if (0 < fraction && fraction < 9)
+            {
+                --empty;
+                Console.Write(blocks[fraction]);
+            }
+
+            for (int i = 0; i < empty; i++)
+                Console.Write(blocks[0]);
+
+            Console.ForegroundColor = defaultColor;
+            Console.BackgroundColor = ConsoleColor.Black;
         }
 
         /// <summary>A function for printing colorful text</summary>
