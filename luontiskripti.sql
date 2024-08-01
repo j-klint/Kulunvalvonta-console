@@ -105,7 +105,6 @@ INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-16',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-17',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-18',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-07-19',  -1,  -1,  -1);
-INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-21',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-22',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-08-23',  -1,  -1,  -1);
 INSERT INTO Holidays(day, fi, se, no) VALUES('2024-11-01', 190, 190, 190);

@@ -154,7 +154,7 @@ namespace Kulunvalvonta
 
                     try
                     {
-                        // this is where most of the time will be spent, waiting for uset input
+                        // this is where most of the time will be spent, waiting for user input
                         string s = WaitForInputLoop(serialPort);
 
                         if (s.Length > 0)
@@ -207,8 +207,8 @@ namespace Kulunvalvonta
                 Console.Write("\x1b[3J");
 
                 // Set console buffer to equal the window in size,
-                // to get rid on unaesthetic scroll bar.
-                // tulee ArgumentOutOfRangeExceptionia, jos on kursori
+                // to get rid of unaesthetic scroll bar.
+                // Tulee ArgumentOutOfRangeExceptionia, jos on kursori
                 // kelaantunut alemmas kuin tuleva bufferin alalaita!
                 Console.SetWindowPosition(0, 0);
                 Console.SetCursorPosition(0, 0);
