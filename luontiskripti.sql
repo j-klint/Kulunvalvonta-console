@@ -1,21 +1,29 @@
--- Ennen kuin luodaan tietokantoja:
+-- Ennen kuin luodaan tietokantoja, niin shellissä ajetaan komento:
 --     sudo /opt/mssql/bin/mssql-conf set-collation
 -- jolle sanotaan:
 --     Finnish_Swedish_100_CI_AS_SC_UTF8
 -- Tarkoittaa "Case Insensitive, Accent Sensitive, Supplementary Characters, UTF-8" tjsp.
+-- Täst'eteenpäin loput on SQL-skriptiä.
 
---CREATE DATABASE Kulunvalv COLLATE Finnish_Swedish_100_CI_AS_SC_UTF8;
--- Vaan tuo collate mahtaa tulla defaulttina serverin asetuksesta
-USE master;
-GO
-DROP DATABASE Kulunvalv;
-GO
+CREATE DATABASE Kulunvalv COLLATE Finnish_Swedish_100_CI_AS_SC_UTF8;
+-- Vaan tuo collate mahtaa tulla defaulttina serverin asetuksesta, joka yllä asetettiin
+
+--USE master;
+--GO
+--DROP DATABASE Kulunvalv;
+--GO
 CREATE DATABASE Kulunvalv;
 GO
+
+-- Isot pojat netissä sanoivat, että ilman tätä transaction logit kasvavat hillittömän isoiksi.
 ALTER DATABASE Kulunvalv SET RECOVERY SIMPLE;
 GO
+
+-- AUTO_CLOSE aiheutti ongelmia saada ripeästi yhteys tietokantaan. Tuli timeoutteja
+-- silloin tällöin ja leimaamista joutui yrittämään moneen kertaan ennen kuin onnistui.
 ALTER DATABASE Kulunvalv SET AUTO_CLOSE OFF;
 GO
+
 USE Kulunvalv;
 GO
 
