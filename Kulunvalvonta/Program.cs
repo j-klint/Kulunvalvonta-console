@@ -84,8 +84,8 @@ namespace Kulunvalvonta
             }
 
             Console.OutputEncoding = Encoding.Unicode;
-            Console.Clear();
-            
+            ClearScreen();
+
             int clrScrDelay;
             string portName;
 
@@ -147,7 +147,7 @@ namespace Kulunvalvonta
                         if (!serialPort.IsOpen)
                         {
                             // if failed, try again after 10 seconds
-							Thread.Sleep(10000);
+                            Thread.Sleep(10000);
                             continue;
                         }
                     }
@@ -192,9 +192,9 @@ namespace Kulunvalvonta
         }
 
         /// <summary>
-        /// Clears the screen and reprints the start message (self-evident)
+        /// Clears the screen (self-evident)
         /// </summary>
-        static void ResetScreen()
+        static void ClearScreen()
         {
             // Ja läl-läl-lää. Clear() ei toimi win11:ssa.
             // Pitää käyttää ylimääräistä taikasanaa.
@@ -214,10 +214,6 @@ namespace Kulunvalvonta
                 Console.SetCursorPosition(0, 0);
                 Console.SetBufferSize(Console.WindowWidth, Console.WindowHeight);
             }
-
-            Print(DateTime.Now.ToString("f"), ConsoleColor.Cyan);
-            Console.WriteLine();
-            Print(startMessage);
         }
 
         /// <summary>
@@ -247,16 +243,20 @@ namespace Kulunvalvonta
                 // putsataan ruutu, jos on odoteltu tarpeeksi kauan
                 // paitsi yöllä, jotta automaattisesti uloslogatut pysysivät näkyvissä
                 if ( !closedForTheNight )
-                    ResetScreen();
+                {
+                    ClearScreen();
+                    Print(DateTime.Now.ToString("f"), ConsoleColor.Cyan);
+                    Console.WriteLine();
+                    Print(startMessage);
+                }
 
                 // Kun kello lyö 21:00, niin logata kaikki automaattisesti pihalle ja asettaa tuhma lippu
                 int hour = DateTime.Now.Hour;
-                //int hour = DateTime.Now.Minute;
 
                 if ( !closedForTheNight && hour >= closingHour)
                 {
                     closedForTheNight = true;
-                    Console.Clear();
+                    ClearScreen();
                     Print("Closing time!\n\n", ConsoleColor.Blue);
 
                     using (SqlConnection conn = new SqlConnection(connectionString))
@@ -408,7 +408,7 @@ namespace Kulunvalvonta
                         Print($"{name}\n\n", ConsoleColor.DarkYellow);
                     }
 
-                    Print("This tag isn't assigned to anyone!\n", ConsoleColor.DarkRed);
+                    Print("This tag isn't assigned to anyone.\n", ConsoleColor.DarkRed);
                     return;
                 }
 
@@ -425,8 +425,6 @@ namespace Kulunvalvonta
                 // and make note if a message ought to be printed afterwards.
                 newStatus ^= Status.LoggedIn;
                 string inOrOut = (newStatus & Status.LoggedIn) != 0 ? "in" : "out";
-                //Print(userName, ConsoleColor.DarkYellow);
-                //Print($" logging {inOrOut}... ");
                 bool notifyAboutAutoLogOut = (newStatus & Status.AutoLogOut) != 0;
 
                 // clear all funny flags, so that normal operation is resumed after a normal log in/out
