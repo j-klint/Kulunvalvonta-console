@@ -253,7 +253,7 @@ namespace Kulunvalvonta
                 // Kun kello lyö 21:00, niin logata kaikki automaattisesti pihalle ja asettaa tuhma lippu
                 int hour = DateTime.Now.Hour;
 
-                if ( !closedForTheNight && hour >= closingHour)
+                if ( !closedForTheNight && (hour >= closingHour || hour < openingHour) )
                 {
                     closedForTheNight = true;
                     ClearScreen();
@@ -281,10 +281,9 @@ namespace Kulunvalvonta
                             status &= ~Status.LoggedIn;
                             status |= Status.AutoLogOut;
 
-                            var date = MakeLogEntry(conn, userId, status);
+                            MakeLogEntry(conn, userId, status);
                             Print($"{userName}", ConsoleColor.DarkYellow);
-                            Print($" was automatically logged out on ");
-                            Print($"{date}.\n", ConsoleColor.Cyan);
+                            Print($" was automatically logged out.\n");
                         }
                     }
 
